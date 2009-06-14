@@ -1,0 +1,60 @@
+? cpukit/libmmu
+Index: cpukit/Makefile.am
+===================================================================
+RCS file: /usr1/CVS/rtems/cpukit/Makefile.am,v
+retrieving revision 1.86
+diff -u -r1.86 Makefile.am
+--- cpukit/Makefile.am	5 May 2009 12:52:29 -0000	1.86
++++ cpukit/Makefile.am	14 Jun 2009 14:05:33 -0000
+@@ -12,6 +12,7 @@
+ SUBDIRS += libcsupport libblock libfs
+ SUBDIRS += libnetworking librpc
+ SUBDIRS += libi2c
++SUBDIRS += libmmu
+ SUBDIRS += libmisc
+ SUBDIRS += libmd
+ SUBDIRS += libgnat
+@@ -135,6 +136,10 @@
+ ## i2c
+ include_rtems_HEADERS += libi2c/libi2c.h
+ 
++
++## mmu
++include_rtems_HEADERS += libmmu/libmmu.h
++
+ ## serdbg
+ if LIBSERDBG
+ include_rtems_HEADERS += libmisc/serdbg/serdbgcnf.h libmisc/serdbg/serdbg.h \
+Index: cpukit/configure.ac
+===================================================================
+RCS file: /usr1/CVS/rtems/cpukit/configure.ac,v
+retrieving revision 1.162
+diff -u -r1.162 configure.ac
+--- cpukit/configure.ac	15 Apr 2009 08:36:13 -0000	1.162
++++ cpukit/configure.ac	14 Jun 2009 14:05:34 -0000
+@@ -364,6 +364,7 @@
+ libmisc/Makefile
+ libi2c/Makefile
+ libmd/Makefile
++libmmu/Makefile
+ zlib/Makefile
+ httpd/Makefile
+ ftpd/Makefile
+Index: cpukit/preinstall.am
+===================================================================
+RCS file: /usr1/CVS/rtems/cpukit/preinstall.am,v
+retrieving revision 1.37
+diff -u -r1.37 preinstall.am
+--- cpukit/preinstall.am	5 May 2009 12:52:29 -0000	1.37
++++ cpukit/preinstall.am	14 Jun 2009 14:05:36 -0000
+@@ -255,6 +255,10 @@
+ 	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/rtems/libi2c.h
+ PREINSTALL_FILES += $(PROJECT_INCLUDE)/rtems/libi2c.h
+ 
++$(PROJECT_INCLUDE)/rtems/libmmu.h: libmmu/libmmu.h $(PROJECT_INCLUDE)/rtems/$(dirstamp)
++	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/rtems/libmmu.h
++PREINSTALL_FILES += $(PROJECT_INCLUDE)/rtems/libmmu.h
++
+ if LIBSERDBG
+ $(PROJECT_INCLUDE)/rtems/serdbgcnf.h: libmisc/serdbg/serdbgcnf.h $(PROJECT_INCLUDE)/rtems/$(dirstamp)
+ 	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/rtems/serdbgcnf.h
