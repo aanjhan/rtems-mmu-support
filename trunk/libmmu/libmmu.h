@@ -14,7 +14,7 @@
 #include <inttypes.h>
 
 
-#define RTEMS_LIBMMU_ALUT_SIZE 1
+#define RTEMS_LIBMMU_ALUT_SIZE 32
 
 
 /* Access definition macros below */
