@@ -4,7 +4,7 @@
 #include <inttypes.h>
 
 
-#define RTEMS_LIBMMU_ALUT_SIZE 32
+#define RTEMS_LIBMMU_ALUT_SIZE 1
 
 
 /* Access definition macros below */
@@ -18,10 +18,21 @@ typedef struct
 {
   uint32_t start_addr;
   uint32_t block_size;
-  unsigned char access_attrib;
+  int access_attrib;
 } rtems_libmmu_alut_entry;
 
 
+const rtems_libmmu_alut_entry rtems_libmmu_alut[RTEMS_LIBMMU_ALUT_SIZE] = 
+{
+  /* Memory Layout access table initialisation goes here */
+  {0x00000000, 4096, 1}
+};
+
+
+
+
+void
+rtems_libmmu_alut_init(void);
 
 extern int
 rtems_libmmu_get_access_attribute(uint32_t addr);
