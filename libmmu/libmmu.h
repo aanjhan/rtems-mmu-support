@@ -14,9 +14,6 @@
 #include <inttypes.h>
 
 
-#define RTEMS_LIBMMU_ALUT_SIZE 5
-
-
 /* Access definition macros below */
 #define RTEMS_LIBMMU_ACCESS_PROT_NONE      0
 #define RTEMS_LIBMMU_ACCESS_PROT_READ      1
