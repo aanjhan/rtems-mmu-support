@@ -9,10 +9,24 @@
 *  $Id$
 */
 
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <errno.h>
+#include <assert.h>
+#include <stdarg.h>
+
+#include <rtems.h>
+#include <rtems/error.h>
+
 #include "libmmu.h"
+
+/* create a alut table instance */
+rtems_libmmu_alut alut;
 
 
 /* Temprary initialisation of ALUT */
@@ -27,22 +41,19 @@
 //};
 
 /*****************************************************
-* Allocate memory for the ALUT
+* Allocate memory for the ALUT, initialises the 
+* ALUT
 *****************************************************/
 rtems_libmmu_alut* 
 rtems_libmmu_alut_create(size_t size)
 {
-  rtems_libmmu_alut* pAlut = malloc(sizeof(rtems_libmmu_alut));
+  
+  rtems_libmmu_alut* pAlut;
+  pAlut = &alut;
+  
   if (pAlut != NULL)
   {
     pAlut->nElements = 0;
-    pAlut->size = size;
-    pAlut->entries = malloc(size * sizeof(rtems_libmmu_alut_entry));
-    if(pAlut->entries == NULL)
-    {
-      free(pAlut);
-      return NULL;
-    }
   }
   return pAlut;
 }
@@ -50,23 +61,22 @@ rtems_libmmu_alut_create(size_t size)
 /****************************************************
 * Add a ALUT entry
 ****************************************************/
-int
+rtems_status_code
 rtems_libmmu_alut_add_entry(rtems_libmmu_alut* pAlut, rtems_libmmu_alut_entry* pEntry)
 {
   size_t nElements;
   nElements = pAlut->nElements;
+  
   /* Check validity of the pointers */
-  /* TODO */
   if (pAlut == NULL && pEntry == NULL)
   {
-    return -1;
+    return RTEMS_INVALID_ADDRESS;
   }
   
   /* Check for ALUT full condition */
-  /* TODO */
-  if(pAlut->size == nElements)
+  if(nElements == RTEMS_LIBMMU_ALUT_SIZE)
   {
-    return -1;
+    return RTEMS_TOO_MANY;
   }
   
   /* Check for address map overlaps???? */
@@ -77,7 +87,7 @@ rtems_libmmu_alut_add_entry(rtems_libmmu_alut* pAlut, rtems_libmmu_alut_entry* p
   pAlut->entries[nElements].block_size = pEntry->block_size;
   pAlut->entries[nElements].access_attrib = pEntry->access_attrib;
   ++pAlut->nElements;
-  return 1;  
+  return RTEMS_SUCCESSFUL;  
   
 }  
   
@@ -87,7 +97,7 @@ rtems_libmmu_alut_add_entry(rtems_libmmu_alut* pAlut, rtems_libmmu_alut_entry* p
 * the address range under which it falls             *
 *****************************************************/
 static rtems_libmmu_alut_entry* 
-rtems_libmmu_alut_search(rtems_libmmu_alut* pAlut, uint32_t addr)
+rtems_libmmu_alut_search(rtems_libmmu_alut* pAlut, char* addr)
 {
   rtems_libmmu_alut_entry* iter_entry;
   uint32_t nElements = pAlut->nElements;
@@ -116,7 +126,7 @@ rtems_libmmu_alut_init(void)
 * location                                           *
 *****************************************************/
 int
-rtems_libmmu_get_access_attribute(rtems_libmmu_alut* pAlut, uint32_t addr)
+rtems_libmmu_get_access_attribute(rtems_libmmu_alut* pAlut, char* addr)
 {
   rtems_libmmu_alut_entry* hit_entry;
   hit_entry = rtems_libmmu_alut_search(pAlut, addr);
@@ -127,7 +137,7 @@ rtems_libmmu_get_access_attribute(rtems_libmmu_alut* pAlut, uint32_t addr)
   else
   {
     /* Error Handling code goes here */
-    return -1;
+    return RTEMS_UNSATISFIED;
   }
 }
 

@@ -14,6 +14,8 @@
 #include <inttypes.h>
 
 
+#define RTEMS_LIBMMU_ALUT_SIZE 16
+
 /* Access definition macros below */
 #define RTEMS_LIBMMU_ACCESS_PROT_NONE      0
 #define RTEMS_LIBMMU_ACCESS_PROT_READ      1
@@ -23,15 +25,14 @@
 
 typedef struct
 {
-  uint32_t start_addr;
+  char* start_addr;
   uint32_t block_size;
   int access_attrib;
 } rtems_libmmu_alut_entry;
 
 typedef struct
 {
-  rtems_libmmu_alut_entry* entries;
-  size_t size;
+  rtems_libmmu_alut_entry entries[RTEMS_LIBMMU_ALUT_SIZE];
   uint32_t nElements;
 } rtems_libmmu_alut;
 
@@ -42,11 +43,11 @@ rtems_libmmu_alut_init(void);
 rtems_libmmu_alut* 
 rtems_libmmu_alut_create(size_t size);
 
-int
+rtems_status_code
 rtems_libmmu_alut_add_entry(rtems_libmmu_alut* pAlut, rtems_libmmu_alut_entry* pEntry);
 
 extern int
-rtems_libmmu_get_access_attribute(rtems_libmmu_alut* pAlut, uint32_t addr);
+rtems_libmmu_get_access_attribute(rtems_libmmu_alut* pAlut, char* addr);
 
 extern int
 rtems_libmmu_list_alut_access(void);
