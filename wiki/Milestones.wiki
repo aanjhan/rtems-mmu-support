@@ -2,7 +2,7 @@
 
 10th July milestone will be:
 
-  * Testsuite present in testsuites/libtests/mmutests
+  * ~~Testsuite present in testsuites/libtests/mmutests~~
   * Testsuite includes some alut setups
   * Testsuite inits MMU (BATs and SRs)
   * PSIM BSP installs TLB miss exception handlers
