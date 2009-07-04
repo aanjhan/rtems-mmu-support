@@ -45,7 +45,6 @@ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps =  \
 	$(top_srcdir)/../aclocal/canonical-target-name.m4 \
 	$(top_srcdir)/../aclocal/canonicalize-tools.m4 \
-	$(top_srcdir)/../aclocal/check-cpuopts.m4 \
 	$(top_srcdir)/../aclocal/check-custom-bsp.m4 \
 	$(top_srcdir)/../aclocal/check-cxx.m4 \
 	$(top_srcdir)/../aclocal/check-tool.m4 \
@@ -54,6 +53,7 @@ am__aclocal_m4_deps =  \
 	$(top_srcdir)/../aclocal/prog-cc.m4 \
 	$(top_srcdir)/../aclocal/prog-cxx.m4 \
 	$(top_srcdir)/../aclocal/project-root.m4 \
+	$(top_srcdir)/../aclocal/rtems-test-no-pause.m4 \
 	$(top_srcdir)/../aclocal/rtems-top.m4 \
 	$(top_srcdir)/../aclocal/version.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -127,11 +127,9 @@ DEPDIR = @DEPDIR@
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
-EGREP = @EGREP@
 ENDIF = @ENDIF@
 EXEEXT = @EXEEXT@
 GCCSPECS = @GCCSPECS@
-GREP = @GREP@
 HAS_CPLUSPLUS = @HAS_CPLUSPLUS@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
