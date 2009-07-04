@@ -24,7 +24,7 @@
 #include "system.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <rtems/cpukit/libmmu/libmmu.h>
+#include <rtems/libmmu.h>
 
 rtems_task Init(
   rtems_task_argument ignored
@@ -33,6 +33,7 @@ rtems_task Init(
   int access;
   rtems_libmmu_alut_entry Entry;
   rtems_libmmu_alut* pAlut;
+  puts( "\n\n*** MMU ALUT TEST BEGINS ***\n\n" );
   pAlut = rtems_libmmu_alut_create(3);
   printf("ALUT created\n");
   Entry.start_addr = 0x00000000;
@@ -56,5 +57,7 @@ rtems_task Init(
   printf("Searching for access attrbute for address 0x00008111...\n");
   access = rtems_libmmu_get_access_attribute(pAlut, 0x00008111);
   printf("Access atribute is %d\n", access);
-  return 0;
+  puts( "\n\n*** MMU ALUT TEST ENDS ***\n\n" );
+  exit(0);
+  //  rtems_test_exit(0);
 }
