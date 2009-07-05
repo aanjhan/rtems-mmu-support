@@ -58,39 +58,6 @@ rtems_libmmu_alut_create(size_t size)
   return pAlut;
 }
 
-/****************************************************
-* Add a ALUT entry
-****************************************************/
-rtems_status_code
-rtems_libmmu_alut_add_entry(rtems_libmmu_alut* pAlut, rtems_libmmu_alut_entry* pEntry)
-{
-  size_t nElements;
-  nElements = pAlut->nElements;
-  
-  /* Check validity of the pointers */
-  if (pAlut == NULL && pEntry == NULL)
-  {
-    return RTEMS_INVALID_ADDRESS;
-  }
-  
-  /* Check for ALUT full condition */
-  if(nElements == RTEMS_LIBMMU_ALUT_SIZE)
-  {
-    return RTEMS_TOO_MANY;
-  }
-  
-  /* Check for address map overlaps???? */
-  /* TODO */
-  
-  /* Append entry to the ALUT */
-  pAlut->entries[nElements].start_addr = pEntry->start_addr;
-  pAlut->entries[nElements].block_size = pEntry->block_size;
-  pAlut->entries[nElements].access_attrib = pEntry->access_attrib;
-  ++pAlut->nElements;
-  return RTEMS_SUCCESSFUL;  
-  
-}  
-  
 
 /*****************************************************
 * Linear search for the element emtry in the alut for*
@@ -110,6 +77,47 @@ rtems_libmmu_alut_search(rtems_libmmu_alut* pAlut, char* addr)
   } 
   return NULL;
 }
+
+
+/****************************************************
+* Add a ALUT entry
+****************************************************/
+rtems_status_code
+rtems_libmmu_alut_add_entry(rtems_libmmu_alut* pAlut, rtems_libmmu_alut_entry* pEntry)
+{
+  size_t nElements;
+  
+  nElements = pAlut->nElements;
+  
+  /* Check validity of the pointers */
+  if (pAlut == NULL && pEntry == NULL)
+  {
+    return RTEMS_INVALID_ADDRESS;
+  }
+  
+  /* Check for ALUT full condition */
+  if(nElements == RTEMS_LIBMMU_ALUT_SIZE)
+  {
+    return RTEMS_TOO_MANY;
+  }
+  
+  /* Check for address map overlaps???? */
+  if( (rtems_libmmu_alut_search(pAlut, pEntry->start_addr) != NULL) ||
+      (rtems_libmmu_alut_search(pAlut, pEntry->start_addr + pEntry->block_size-1) != NULL)){
+    return RTEMS_INVALID_ADDRESS;
+  }
+ 
+  
+  /* Append entry to the ALUT */
+  pAlut->entries[nElements].start_addr = pEntry->start_addr;
+  pAlut->entries[nElements].block_size = pEntry->block_size;
+  pAlut->entries[nElements].access_attrib = pEntry->access_attrib;
+  ++pAlut->nElements;
+  return RTEMS_SUCCESSFUL;  
+  
+}  
+  
+
 
 
 /*****************************************************
