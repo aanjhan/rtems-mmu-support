@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <rtems/libmmu.h>
+#include <libcpu/mmu_support.h>
 
 rtems_task Init(
   rtems_task_argument ignored
@@ -35,39 +36,51 @@ rtems_task Init(
   rtems_libmmu_alut_entry Entry;
   rtems_libmmu_alut* pAlut;
   puts( "\n\n*** MMU ALUT TEST BEGINS ***\n\n" );
-
+  printf("Installing TLB Miss Exception handler \n");
+  mmu_init();
   pAlut = rtems_libmmu_alut_create(3);
   printf("ALUT created\n");
-  printf("Adding entry\n");
+  printf("Adding entry with block size less than 4K\n");
   Entry.start_addr = 0x00000000;
-  Entry.block_size = 0x00000FFF;
+  Entry.block_size = 2096;
   Entry.access_attrib = 1;
   status = rtems_libmmu_alut_add_entry(pAlut,&Entry);
   if(status == RTEMS_SUCCESSFUL){
-    printf("1 Entry added\n");
+    printf("WARNING : Invalid block size and still entry added\n");
   }
   else{
     printf("Entry addition failed\n");
   }
 
     
-  printf("Adding entry\n");  
+  printf("Adding entry with block size not a multiple of 4K\n");  
   Entry.start_addr = (char*)0x02000000;
-  Entry.block_size = 0x00000FFF;
+  Entry.block_size = 0x00008FFF;
   Entry.access_attrib = 3;
   status = rtems_libmmu_alut_add_entry(pAlut,&Entry);
   if(status == RTEMS_SUCCESSFUL){
-    printf("Entry successfully added\n");
+    printf("WARNING : Invalid block size and still entry successfully added\n");
   }
   else{
     printf("Entry adding failed\n");
   }
   
+  printf("Adding valid entry into ALUT\n");
+  Entry.start_addr = (char*)0x02000400;
+  Entry.block_size = 0x00008000;
+  Entry.access_attrib = 2;
+  status = rtems_libmmu_alut_add_entry(pAlut,&Entry);
+  if(status == RTEMS_SUCCESSFUL){
+    printf("Entry Added\n");
+  }
+  else{
+    printf("WARNING : Entry addition failed\n");
+  }
 
   printf("Adding overlapping  address value\n");
-  Entry.start_addr = (char*)0x02000400;
-  Entry.block_size = 0x000007FF;
-  Entry.access_attrib = 2;
+  Entry.start_addr = (char*)0x02001400;
+  Entry.block_size = 0x00004000;
+  Entry.access_attrib = 1;
   status = rtems_libmmu_alut_add_entry(pAlut,&Entry);
   if(status == RTEMS_SUCCESSFUL){
     printf("WARNING : Addition passed inspite of address overlap\n");
@@ -78,19 +91,24 @@ rtems_task Init(
 
   printf("Adding entry\n");
   Entry.start_addr = (char*)0x00008000;
-  Entry.block_size = 0x000007FF;
-  Entry.access_attrib = 2;
+  Entry.block_size = 0x00004000;
+  Entry.access_attrib = 1;
   status = rtems_libmmu_alut_add_entry(pAlut,&Entry);
   if(status == RTEMS_SUCCESSFUL){
     printf("Entry successfully added\n");
   }
   else{
-    printf("Entry adding failed\n");
+    printf("WARNING : Entry adding failed\n");
   }
   
   printf("Searching for access attrbute for address 0x00008111...\n");
   access = rtems_libmmu_get_access_attribute(pAlut, (char*)0x00008111);
-  printf("Access atribute is %d\n", access);
+  if(access == RTEMS_UNSATISFIED){
+    printf("Access Attribute not found \n");
+  }
+  else {
+    printf("Access Attribute for the request is %d\n", access);
+  }
 
   printf("Searching for access attrbute for address 0x00708111...\n");
   access = rtems_libmmu_get_access_attribute(pAlut, (char*)0x00708111);
@@ -103,5 +121,4 @@ rtems_task Init(
 
   puts( "\n\n*** MMU ALUT TEST ENDS ***\n\n" );
   exit(0);
-  //  rtems_test_exit(0);
 }

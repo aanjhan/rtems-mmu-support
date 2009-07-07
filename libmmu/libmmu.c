@@ -106,6 +106,11 @@ rtems_libmmu_alut_add_entry(rtems_libmmu_alut* pAlut, rtems_libmmu_alut_entry* p
       (rtems_libmmu_alut_search(pAlut, pEntry->start_addr + pEntry->block_size-1) != NULL)){
     return RTEMS_INVALID_ADDRESS;
   }
+
+  /* Check for invalid block size */
+  if ((pEntry->block_size < 0x1000) || (pEntry->block_size % 0x1000 != 0)){
+    return RTEMS_INVALID_ADDRESS;
+  }
  
   
   /* Append entry to the ALUT */
