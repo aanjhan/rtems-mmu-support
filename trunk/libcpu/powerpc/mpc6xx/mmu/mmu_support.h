@@ -8,7 +8,23 @@
 *
 *  $Id$
 */
+#ifndef _LIBCPU_MMU_SUPPORT_H
+#define _LIBCPU_MMU_SUPPORT_H
 
+
+int dsi_exception_vector_prolog_code_size;
 
 /* Function prototypes that can be shared with high
    level modules go in here */
+void
+mmu_init(void);
+
+extern void
+mmu_handle_dsi_exception(void);
+
+extern void dsi_exception_vector_prolog_code(void);
+
+void
+mmu_irq_init(void);
+
+#endif
