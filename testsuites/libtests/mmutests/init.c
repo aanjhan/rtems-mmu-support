@@ -33,11 +33,12 @@ rtems_task Init(
 {
   rtems_status_code status;
   int access;
+  unsigned char* start = (unsigned char*)0x3000;
   rtems_libmmu_alut_entry Entry;
   rtems_libmmu_alut* pAlut;
   puts( "\n\n*** MMU ALUT TEST BEGINS ***\n\n" );
-  printf("Installing TLB Miss Exception handler \n");
-  mmu_init();
+  printf("Installing Exception vector for MMU\n");
+  mmu_irq_init();
   pAlut = rtems_libmmu_alut_create(3);
   printf("ALUT created\n");
   printf("Adding entry with block size less than 4K\n");
@@ -118,6 +119,11 @@ rtems_task Init(
   else{
     printf("WARNING : Access attribute request passed for an unmapped address\n");
   }
+
+  printf("Checking MMU expection.. \n");
+  memset(start, 0, 0x3300 - 0x3000);
+
+  
 
   puts( "\n\n*** MMU ALUT TEST ENDS ***\n\n" );
   exit(0);

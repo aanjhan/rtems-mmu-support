@@ -1,14 +1,76 @@
 ? c/src/lib/libcpu/powerpc/mpc6xx/mmu/mmu.c
-? c/src/lib/libcpu/powerpc/mpc6xx/mmu/mmu.h
+? c/src/lib/libcpu/powerpc/mpc6xx/mmu/mmu_exception.S
+? c/src/lib/libcpu/powerpc/mpc6xx/mmu/mmu_support.c
+? c/src/lib/libcpu/powerpc/mpc6xx/mmu/mmu_support.h
 ? cpukit/libmmu
 ? testsuites/libtests/mmutests
+Index: c/src/lib/libcpu/powerpc/Makefile.am
+===================================================================
+RCS file: /usr1/CVS/rtems/c/src/lib/libcpu/powerpc/Makefile.am,v
+retrieving revision 1.54
+diff -u -r1.54 Makefile.am
+--- c/src/lib/libcpu/powerpc/Makefile.am	27 Jul 2008 07:10:37 -0000	1.54
++++ c/src/lib/libcpu/powerpc/Makefile.am	9 Jul 2009 12:22:37 -0000
+@@ -215,12 +215,15 @@
+ if mpc6xx
+ 
+ # mpc6xx/mmu
+-include_libcpu_HEADERS += mpc6xx/mmu/bat.h mpc6xx/mmu/pte121.h
++include_libcpu_HEADERS += mpc6xx/mmu/bat.h mpc6xx/mmu/pte121.h \
++    mpc6xx/mmu/mmu_support.h
+ 
+ noinst_PROGRAMS += mpc6xx/mmu.rel
+ mpc6xx_mmu_rel_SOURCES = mpc6xx/mmu/bat.c mpc6xx/mmu/bat.h \
+     mpc6xx/mmu/pte121.c mpc6xx/mmu/pte121.h \
+-    mpc6xx/mmu/mmuAsm.S
++    mpc6xx/mmu/mmuAsm.S \
++    mpc6xx/mmu/mmu_support.c mpc6xx/mmu/mmu_support.h \
++    mpc6xx/mmu/mmu_exception.S
+ mpc6xx_mmu_rel_CPPFLAGS = $(AM_CPPFLAGS)
+ mpc6xx_mmu_rel_LDFLAGS = $(RTEMS_RELLDFLAGS)
+ 
+Index: c/src/lib/libcpu/powerpc/preinstall.am
+===================================================================
+RCS file: /usr1/CVS/rtems/c/src/lib/libcpu/powerpc/preinstall.am,v
+retrieving revision 1.23
+diff -u -r1.23 preinstall.am
+--- c/src/lib/libcpu/powerpc/preinstall.am	18 Jul 2008 15:56:48 -0000	1.23
++++ c/src/lib/libcpu/powerpc/preinstall.am	9 Jul 2009 12:22:37 -0000
+@@ -152,6 +152,10 @@
+ 	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/libcpu/pte121.h
+ PREINSTALL_FILES += $(PROJECT_INCLUDE)/libcpu/pte121.h
+ 
++$(PROJECT_INCLUDE)/libcpu/mmu_support.h: mpc6xx/mmu/mmu_support.h $(PROJECT_INCLUDE)/libcpu/$(dirstamp)
++	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/libcpu/mmu_support.h
++PREINSTALL_FILES += $(PROJECT_INCLUDE)/libcpu/mmu_support.h
++
+ $(PROJECT_INCLUDE)/libcpu/c_clock.h: mpc6xx/clock/c_clock.h $(PROJECT_INCLUDE)/libcpu/$(dirstamp)
+ 	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/libcpu/c_clock.h
+ PREINSTALL_FILES += $(PROJECT_INCLUDE)/libcpu/c_clock.h
+Index: c/src/lib/libcpu/powerpc/new-exceptions/bspsupport/vectors_init.c
+===================================================================
+RCS file: /usr1/CVS/rtems/c/src/lib/libcpu/powerpc/new-exceptions/bspsupport/vectors_init.c,v
+retrieving revision 1.9
+diff -u -r1.9 vectors_init.c
+--- c/src/lib/libcpu/powerpc/new-exceptions/bspsupport/vectors_init.c	18 Aug 2008 21:17:06 -0000	1.9
++++ c/src/lib/libcpu/powerpc/new-exceptions/bspsupport/vectors_init.c	9 Jul 2009 12:22:37 -0000
+@@ -387,6 +387,9 @@
+ 		printk("Exception handling initialization done\n");
+ 	}
+ #endif
++
++	//	mmu_irq_init();
++
+ }
+ 
+ 
 Index: cpukit/Makefile.am
 ===================================================================
 RCS file: /usr1/CVS/rtems/cpukit/Makefile.am,v
 retrieving revision 1.86
 diff -u -r1.86 Makefile.am
 --- cpukit/Makefile.am	5 May 2009 12:52:29 -0000	1.86
-+++ cpukit/Makefile.am	4 Jul 2009 17:10:07 -0000
++++ cpukit/Makefile.am	9 Jul 2009 12:22:39 -0000
 @@ -12,6 +12,7 @@
  SUBDIRS += libcsupport libblock libfs
  SUBDIRS += libnetworking librpc
@@ -34,7 +96,7 @@ RCS file: /usr1/CVS/rtems/cpukit/configure.ac,v
 retrieving revision 1.162
 diff -u -r1.162 configure.ac
 --- cpukit/configure.ac	15 Apr 2009 08:36:13 -0000	1.162
-+++ cpukit/configure.ac	4 Jul 2009 17:10:07 -0000
++++ cpukit/configure.ac	9 Jul 2009 12:22:39 -0000
 @@ -364,6 +364,7 @@
  libmisc/Makefile
  libi2c/Makefile
@@ -49,7 +111,7 @@ RCS file: /usr1/CVS/rtems/cpukit/preinstall.am,v
 retrieving revision 1.37
 diff -u -r1.37 preinstall.am
 --- cpukit/preinstall.am	5 May 2009 12:52:29 -0000	1.37
-+++ cpukit/preinstall.am	4 Jul 2009 17:10:07 -0000
++++ cpukit/preinstall.am	9 Jul 2009 12:22:40 -0000
 @@ -255,6 +255,10 @@
  	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/rtems/libi2c.h
  PREINSTALL_FILES += $(PROJECT_INCLUDE)/rtems/libi2c.h
@@ -67,7 +129,7 @@ RCS file: /usr1/CVS/rtems/cpukit/wrapup/Makefile.am,v
 retrieving revision 1.66
 diff -u -r1.66 Makefile.am
 --- cpukit/wrapup/Makefile.am	5 May 2009 13:36:07 -0000	1.66
-+++ cpukit/wrapup/Makefile.am	4 Jul 2009 17:10:07 -0000
++++ cpukit/wrapup/Makefile.am	9 Jul 2009 12:22:42 -0000
 @@ -43,6 +43,9 @@
  TMP_LIBS += ../libmisc/libstackchk.a
  TMP_LIBS += ../libmisc/libcpuuse.a
@@ -78,13 +140,29 @@ diff -u -r1.66 Makefile.am
  ## XXX temporarily removed because it causes a
  ## XXX number of BSPs to not link "main(){}" used by autoconf
  # if LIBSERDBG
+Index: make/custom/psim.cfg
+===================================================================
+RCS file: /usr1/CVS/rtems/make/custom/psim.cfg,v
+retrieving revision 1.32
+diff -u -r1.32 psim.cfg
+--- make/custom/psim.cfg	19 Sep 2008 19:27:36 -0000	1.32
++++ make/custom/psim.cfg	9 Jul 2009 12:22:43 -0000
+@@ -14,7 +14,7 @@
+ 
+ #  This contains the compiler options necessary to select the CPU model
+ #  and (hopefully) optimize for it. 
+-CPU_CFLAGS = -mcpu=603e  -Dppc603e
++CPU_CFLAGS = -mcpu=603e  -Dppc603e -DRTEMS_DEBUG
+ 
+ # optimize flag: typically -O2
+ CFLAGS_OPTIMIZE_V = -O2 -g -fno-keep-inline-functions
 Index: testsuites/libtests/Makefile.am
 ===================================================================
 RCS file: /usr1/CVS/rtems/testsuites/libtests/Makefile.am,v
 retrieving revision 1.14
 diff -u -r1.14 Makefile.am
 --- testsuites/libtests/Makefile.am	7 May 2009 17:48:15 -0000	1.14
-+++ testsuites/libtests/Makefile.am	4 Jul 2009 17:10:07 -0000
++++ testsuites/libtests/Makefile.am	9 Jul 2009 12:22:43 -0000
 @@ -5,7 +5,7 @@
  ACLOCAL_AMFLAGS = -I ../aclocal
  
@@ -100,7 +178,7 @@ RCS file: /usr1/CVS/rtems/testsuites/libtests/configure.ac,v
 retrieving revision 1.21
 diff -u -r1.21 configure.ac
 --- testsuites/libtests/configure.ac	7 May 2009 17:48:15 -0000	1.21
-+++ testsuites/libtests/configure.ac	4 Jul 2009 17:10:07 -0000
++++ testsuites/libtests/configure.ac	9 Jul 2009 12:22:43 -0000
 @@ -44,5 +44,6 @@
  stackchk/Makefile
  termios/Makefile
@@ -114,7 +192,7 @@ RCS file: /usr1/CVS/rtems/testsuites/samples/hello/init.c,v
 retrieving revision 1.15
 diff -u -r1.15 init.c
 --- testsuites/samples/hello/init.c	11 Jan 2008 22:50:10 -0000	1.15
-+++ testsuites/samples/hello/init.c	4 Jul 2009 17:10:07 -0000
++++ testsuites/samples/hello/init.c	9 Jul 2009 12:22:44 -0000
 @@ -1,24 +1,13 @@
 -/*  Init
 - *

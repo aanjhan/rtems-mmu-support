@@ -9,7 +9,34 @@
 *  $Id$
 */
 
-#include "mmu.h"
+#include <rtems.h>
+#include <libcpu/bat.h>
+#include <libcpu/spr.h>
+#include "mmu_support.h"
+#include <rtems/powerpc/powerpc.h>
+#include <rtems/irq.h>
+#include <libcpu/raw_exception.h>
+#include <rtems/asm.h>
+
+// FIX ME
+#include <stdio.h>
+
+/* Macro for clearing BAT Arrays in ASM */
+
+#define CLRBAT_ASM(batu,r)			\
+	"	sync                 \n"	\
+	"	isync                \n"	\
+	"	li      "#r",    0   \n"	\
+	"	mtspr	"#batu", "#r"\n"	\
+	"	sync                 \n"	\
+	"	isync                \n"
+
+#define	CLRBAT(bat)				\
+	asm volatile(				\
+		CLRBAT_ASM(%0, 0)		\
+		:				\
+		:"i"(bat##U)			\
+		:"0")
 
 
 /* Checks whether address translation is enabled */
@@ -18,11 +45,33 @@ mmu_is_addr_tran_enabled(void){
   return 0x0;
 }
 
+static void
+tlbmisshdl(void){
+}
 
 /* Initialisation of MMU goes in here */
 void
 mmu_init(void){
-  /* MMU initialisation code goes in here */
+  /* Clear BAT registers */
+  CLRBAT (DBAT0);
+  CLRBAT (DBAT1);
+  CLRBAT (DBAT2);
+  CLRBAT (DBAT3);  
+  CLRBAT (DBAT4);
+  CLRBAT (DBAT5);
+  CLRBAT (DBAT6);
+  CLRBAT (DBAT7);
+  
+}
+
+void
+mmu_irq_init(void){
+  rtems_raw_except_connect_data dsiVector;
+  dsiVector.exceptIndex	= ASM_PROT_VECTOR;
+  dsiVector.hdl.vector	= ASM_PROT_VECTOR;
+  dsiVector.hdl.raw_hdl	= dsi_exception_vector_prolog_code;
+  dsiVector.hdl.raw_hdl_size = 	(unsigned) &dsi_exception_vector_prolog_code_size;
+  ppc_set_exception(&dsiVector);
 }
 
 /* Turn on the MMU - Best done in assembly (Try to use  'rfi'
@@ -40,7 +89,7 @@ mmu_off(void){
 /* Make a BAT entry (either IBAT or DBAT entry) Parameters to pass
    would be EA, PA, Block Length, Access Bits */
 void
-mmu_make_bat_entry(/* parameters to be decided */){
+mmu_make_bat_entry(void){
 
 }
 
@@ -80,6 +129,8 @@ void
 mmu_handle_dsi_exception(void){
   /* This would be the place where a new PTE can be
      fetched from the ALUT at the higher level */
+  printf("Hit\n");
+
 }
 
 /* Same thing as above but for Instruction access */
