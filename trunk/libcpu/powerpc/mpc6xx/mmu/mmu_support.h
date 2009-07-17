@@ -19,8 +19,8 @@ int dsi_exception_vector_prolog_code_size;
 void
 mmu_init(void);
 
-extern void
-mmu_handle_dsi_exception(void);
+extern int
+mmu_handle_dsi_exception(BSP_Exception_frame *f, unsigned vector);
 
 extern void dsi_exception_vector_prolog_code(void);
 

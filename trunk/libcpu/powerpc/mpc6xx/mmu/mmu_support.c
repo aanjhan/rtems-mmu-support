@@ -12,10 +12,10 @@
 #include <rtems.h>
 #include <libcpu/bat.h>
 #include <libcpu/spr.h>
+#include <bsp/ppc_exc_bspsupp.h>
 #include "mmu_support.h"
 #include <rtems/powerpc/powerpc.h>
 #include <rtems/irq.h>
-#include <libcpu/raw_exception.h>
 #include <rtems/asm.h>
 
 // FIX ME
@@ -66,12 +66,13 @@ mmu_init(void){
 
 void
 mmu_irq_init(void){
-  rtems_raw_except_connect_data dsiVector;
-  dsiVector.exceptIndex	= ASM_PROT_VECTOR;
-  dsiVector.hdl.vector	= ASM_PROT_VECTOR;
-  dsiVector.hdl.raw_hdl	= dsi_exception_vector_prolog_code;
-  dsiVector.hdl.raw_hdl_size = 	(unsigned) &dsi_exception_vector_prolog_code_size;
-  ppc_set_exception(&dsiVector);
+  ppc_exc_set_handler(ASM_PROT_VECTOR, mmu_handle_dsi_exception);
+  /* rtems_raw_except_connect_data dsiVector; */
+  /* dsiVector.exceptIndex	= ASM_PROT_VECTOR; */
+  /* dsiVector.hdl.vector	= ASM_PROT_VECTOR; */
+  /* dsiVector.hdl.raw_hdl	= dsi_exception_vector_prolog_code; */
+  /* dsiVector.hdl.raw_hdl_size = 	(unsigned) dsi_exception_vector_prolog_code_size; */
+  /* ppc_set_exception(&dsiVector); */
 }
 
 /* Turn on the MMU - Best done in assembly (Try to use  'rfi'
@@ -125,11 +126,16 @@ mmu_ibat_generate_pa_from_ea(void){
    - Exception Type (depending on DSISR[0..n]
    - address for which the transaltion failed
    - Anything else? */
-void
-mmu_handle_dsi_exception(void){
-  /* This would be the place where a new PTE can be
-     fetched from the ALUT at the higher level */
-  printf("Hit\n");
+typedef union { uint32_t u; uint8_t c[4]; } u32_a_t;
+
+
+int
+mmu_handle_dsi_exception(BSP_Exception_frame *f, unsigned vector){
+
+  printk("Exception hit\n");
+  asm volatile("rfi");
+  
+  return 0;
 
 }
 

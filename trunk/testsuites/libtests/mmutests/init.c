@@ -27,18 +27,41 @@
 #include <rtems/libmmu.h>
 #include <libcpu/mmu_support.h>
 
+#define SYNC_LONGJMP_TEST(msr)				\
+	asm volatile(						\
+		"	mtsrr1	%0			\n\t"	\
+		"	bl		1f			\n\t"	\
+		"1:	mflr	3			\n\t"	\
+		"	addi	3,3,1f-1b	\n\t"	\
+		"	mtsrr0	3			\n\t"	\
+		"	rfi					\n\t"	\
+		"1:						\n\t"	\
+		:								\
+		:"r"(msr)						\
+		:"3","lr","memory")
+
+
+
 rtems_task Init(
   rtems_task_argument ignored
 )
 {
   rtems_status_code status;
+  unsigned long msr;
   int access;
+  int i;
+  volatile char* a = 0x000044;
+  void* memset_status;
   unsigned char* start = (unsigned char*)0x3000;
   rtems_libmmu_alut_entry Entry;
   rtems_libmmu_alut* pAlut;
   puts( "\n\n*** MMU ALUT TEST BEGINS ***\n\n" );
+  /*printf("Switching off MMU\n");
+  SYNC_LONGJMP_TEST (msr & ~(MSR_EE | MSR_DR | MSR_IR));
   printf("Installing Exception vector for MMU\n");
   mmu_irq_init();
+  printf("Switching on MMU\n");
+  SYNC_LONGJMP_TEST (msr);*/
   pAlut = rtems_libmmu_alut_create(3);
   printf("ALUT created\n");
   printf("Adding entry with block size less than 4K\n");
@@ -121,10 +144,9 @@ rtems_task Init(
   }
 
   printf("Checking MMU expection.. \n");
-  memset(start, 0, 0x3300 - 0x3000);
-
-  
-
+  for(i=0;i<128;i++){
+   *a++ = 0xaa;
+  }
   puts( "\n\n*** MMU ALUT TEST ENDS ***\n\n" );
   exit(0);
 }
