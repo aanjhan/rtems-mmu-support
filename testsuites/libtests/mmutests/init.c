@@ -50,7 +50,7 @@ rtems_task Init(
   unsigned long msr;
   int access;
   int i;
-  volatile char* a = 0x000044;
+  volatile char* a = 0xA0000000;
   void* memset_status;
   unsigned char* start = (unsigned char*)0x3000;
   rtems_libmmu_alut_entry Entry;
