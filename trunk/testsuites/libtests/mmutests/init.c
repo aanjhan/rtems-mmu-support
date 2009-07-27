@@ -56,12 +56,6 @@ rtems_task Init(
   rtems_libmmu_alut_entry Entry;
   rtems_libmmu_alut* pAlut;
   puts( "\n\n*** MMU ALUT TEST BEGINS ***\n\n" );
-  /*printf("Switching off MMU\n");
-  SYNC_LONGJMP_TEST (msr & ~(MSR_EE | MSR_DR | MSR_IR));
-  printf("Installing Exception vector for MMU\n");
-  mmu_irq_init();
-  printf("Switching on MMU\n");
-  SYNC_LONGJMP_TEST (msr);*/
   pAlut = rtems_libmmu_alut_create(3);
   printf("ALUT created\n");
   printf("Adding entry with block size less than 4K\n");
