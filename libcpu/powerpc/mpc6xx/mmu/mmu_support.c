@@ -36,6 +36,8 @@
 		:"0")
 
 
+SPR_RO(DAR);
+SPR_RO(SDR1);
 
 #define KEY_SUP			(1<<30) /* supervisor mode key */
 #define KEY_USR			(1<<29) /* user mode key */
@@ -44,24 +46,15 @@
 #define LD_VSID_SIZE            24
 #define LD_HASH_SIZE            19
 
-/* page index of an EA */
-#define PI121(ea)	(((ea)>>LD_PG_SIZE) & ((1<<LD_PI_SIZE)-1))
-
-/* read VSID from segment register */
-static uint32_t
-seg2vsid (uint32_t ea)
-{
-  asm volatile ("mfsrin %0, %0":"=r" (ea):"0" (ea));
-  return ea & ((1 << LD_VSID_SIZE) - 1);
-}
-
 /* Primary and secondary PTE hash functions */
 
 /* Compute the primary hash from a VSID and a PI */
-#define PTE_HASH1(vsid, pi) (((vsid)^(pi))&(0x0007FFFF))
+#define PTE_HASH_FUNC1(vsid, pi) (((vsid)^(pi))&(0x0007FFFF))
 
 /* Compute the secondary hash from a primary hash */
-#define PTE_HASH2(hash1) ((~(hash1))&(0x0007FFFF))
+#define PTE_HASH_FUNC2(hash1) ((~(hash1))&(0x0007FFFF))
+
+/* HTABORG and HTABMASK values */
 
 
 static int
@@ -118,6 +111,19 @@ add_pte(libcpu_mmu_pte *pte,
   return 0;
 }
 
+static void
+get_pteg_addr(libcpu_mmu_pte* pteg, uint32_t hash){
+  uint32_t masked_hash;
+  uint32_t htaborg, htabmask;
+  htabmask = _read_SDR1() & 0x1ff;
+  htaborg = _read_SDR1() & 0xffff0000;
+  masked_hash = ((htaborg >> 16) & 0x000001ff) | ((hash >> 10) & htabmask);
+  pteg = (libcpu_mmu_pte *)(htaborg | (masked_hash << 16) | (hash & 0x000003ff) << 6);
+}
+
+
+
+
 /* Checks whether address translation is enabled */
 static uint32_t
 mmu_is_addr_tran_enabled(void){
@@ -137,8 +143,50 @@ mmu_is_addr_tran_enabled(void){
 
 static int
 mmu_handle_dsi_exception(BSP_Exception_frame *f, unsigned vector){
-
+  uint32_t ea, sr_data, vsid, pi, hash1, hash2;
+  int ppteg_search_status, spteg_search_status;
+  libcpu_mmu_pte* ppteg;
+  libcpu_mmu_pte* spteg;
   printk("DSI Exception hit\n");
+  
+  /* get effective address from DAR */
+  ea = _read_DAR();
+
+  /* Read corresponding SR Data */
+  sr_data = _read_SR((void *) ea);
+
+  /* Extract VSID */
+  vsid = sr_data & SR_VSID;
+
+  /* get page index (PI) from EA */
+  pi = (ea >> 12) & 0x0000ffff;
+
+  /* Compute HASH 1 */
+  hash1 = PTE_HASH_FUNC1(vsid, pi);
+
+  /* Compute PTEG Address from the hash 1 value */
+  get_pteg_addr(ppteg, hash1);
+
+  /* Search for PTE in group */
+  ppteg_search_status = search_valid_pte(ppteg, vsid, pi);
+  
+  if (ppteg_search_status == -1){
+  
+    /* PTE Not found . Search in SPTEG */
+    hash2 = PTE_HASH_FUNC2(hash1);
+    get_pteg_addr(spteg, hash2);
+    spteg_search_status = search_valid_pte(spteg, vsid, pi);
+    if (spteg_search_status == -1){
+      /* PTE not found in second PTEG also */
+    } else {
+      /* PTE found in second group */
+      /* Code for determining access attribute goes here */
+    }
+    
+  } else { 
+    /* PTE found in primary group itself */
+    /* Code for determining attribute goes here */
+  }
   return 0;
 
 }
@@ -173,9 +221,6 @@ mmu_init(void){
 void
 mmu_irq_init(void){
   uint32_t i;
-  /* trial for asm inline */
-  uint32_t pt;
-  pt = 0xFF00FFFF;
   ppc_exc_set_handler(ASM_PROT_VECTOR, mmu_handle_dsi_exception);
   ppc_exc_set_handler(ASM_60X_DLMISS_VECTOR, mmu_handle_tlb_dlmiss_exception);
   ppc_exc_set_handler(ASM_60X_DSMISS_VECTOR, mmu_handle_tlb_dsmiss_exception);
@@ -187,8 +232,7 @@ mmu_irq_init(void){
   }
 
   /* Set up SDR1 register for page table address */
-  /* FIX ME */
-  asm volatile ("mtspr 25,%0"::"r" (pt));
+  /*asm volatile ("mtspr 25,%0"::"r" (pt));*/
 }
 
 /* Make a BAT entry (either IBAT or DBAT entry) Parameters to pass
