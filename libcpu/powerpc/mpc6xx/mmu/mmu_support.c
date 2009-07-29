@@ -35,6 +35,8 @@
 		:"i"(bat##U)			\
 		:"0")
 
+
+
 #define KEY_SUP			(1<<30) /* supervisor mode key */
 #define KEY_USR			(1<<29) /* user mode key */
 #define LD_PG_SIZE              12 /* In logarithm base */
@@ -61,8 +63,22 @@ seg2vsid (uint32_t ea)
 /* Compute the secondary hash from a primary hash */
 #define PTE_HASH2(hash1) ((~(hash1))&(0x0007FFFF))
 
+
 static int
-search_pte(libcpu_mmu_pte *pte, uint32_t vsid, uint32_t api){
+search_empty_pte_slot(libcpu_mmu_pte *pte){
+  register int i;
+  for(i = 0; i < 8; i++) {
+    if(~(pte[i].ptew0 & PTEW0_VALID)) {
+      /* Found invalid pte slot */
+      return i;
+    }
+  }
+  return -1; /* Failed search for empty pte slot */
+}
+
+
+static int
+search_valid_pte(libcpu_mmu_pte *pte, uint32_t vsid, uint32_t api){
 
   register int i;
   register uint32_t temp_vsid;
@@ -157,6 +173,9 @@ mmu_init(void){
 void
 mmu_irq_init(void){
   uint32_t i;
+  /* trial for asm inline */
+  uint32_t pt;
+  pt = 0xFF00FFFF;
   ppc_exc_set_handler(ASM_PROT_VECTOR, mmu_handle_dsi_exception);
   ppc_exc_set_handler(ASM_60X_DLMISS_VECTOR, mmu_handle_tlb_dlmiss_exception);
   ppc_exc_set_handler(ASM_60X_DSMISS_VECTOR, mmu_handle_tlb_dsmiss_exception);
@@ -166,18 +185,10 @@ mmu_irq_init(void){
   for (i = 0;i < 16;i++) {
     asm volatile( "mtsrin %0, %1\n" : : "r" (i * 0x1000), "r" (i << (31 - 3)));
   }
-}
 
-/* Turn on the MMU - Best done in assembly (Try to use  'rfi'
-   instruction) */
-void
-mmu_on(void){
-}
-
-/* Turn off the MMU - Best done in assembly (Try to use  'rfi'
-   instruction) */
-void
-mmu_off(void){
+  /* Set up SDR1 register for page table address */
+  /* FIX ME */
+  asm volatile ("mtspr 25,%0"::"r" (pt));
 }
 
 /* Make a BAT entry (either IBAT or DBAT entry) Parameters to pass
@@ -216,10 +227,5 @@ mmu_ibat_generate_pa_from_ea(void){
 /* Same thing as above but for Instruction access */
 void
 mmu_handle_isi_exception(void){
-
-}
-
-void
-mmu_make_pte(void){
 
 }
