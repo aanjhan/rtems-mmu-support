@@ -37,7 +37,8 @@
 
 
 SPR_RO(DAR);
-SPR_RO(SDR1);
+SPR_RW(SDR1);
+SPR_RO(DSISR);
 
 #define KEY_SUP			(1<<30) /* supervisor mode key */
 #define KEY_USR			(1<<29) /* user mode key */
@@ -71,17 +72,17 @@ search_empty_pte_slot(libcpu_mmu_pte *pte){
 
 
 static int
-search_valid_pte(libcpu_mmu_pte *pte, uint32_t vsid, uint32_t api){
+search_valid_pte(libcpu_mmu_pte *pteg, uint32_t vsid, uint32_t api){
 
   register int i;
   register uint32_t temp_vsid;
   register uint32_t temp_api;
     
   for(i = 0; i < 8; i++) {
-    if(pte[i].ptew0 & PTEW0_VALID) { 
+    if(pteg[i].ptew0 & PTEW0_VALID) { 
 		 
-      temp_api  = pte[i].ptew0 & PTEW0_API;
-      temp_vsid = (pte[i].ptew0 & PTEW0_VSID) >> 7;
+      temp_api  = pteg[i].ptew0 & PTEW0_API;
+      temp_vsid = (pteg[i].ptew0 & PTEW0_VSID) >> 7;
 		
       if(temp_api == api && temp_vsid == vsid) { /* hit */
 	return i;
@@ -93,7 +94,7 @@ search_valid_pte(libcpu_mmu_pte *pte, uint32_t vsid, uint32_t api){
 
 
 static int
-add_pte(libcpu_mmu_pte *pte,
+BSP_ppc_add_pte(libcpu_mmu_pte *pte,
         uint32_t vsid,
         uint32_t hashfunc,
         uint32_t api,
@@ -101,6 +102,8 @@ add_pte(libcpu_mmu_pte *pte,
         uint32_t wimg,
         uint32_t protp)
 {
+  
+  /* Remember here the PTE pointer indicate to the actual entry */
   pte->ptew0 |= (vsid << 7) & PTEW0_VSID;
   pte->ptew0 |= (hashfunc << 6) & PTEW0_HASHF;
   pte->ptew0 |= (api & PTEW0_API);
@@ -122,16 +125,6 @@ get_pteg_addr(libcpu_mmu_pte* pteg, uint32_t hash){
 }
 
 
-
-
-/* Checks whether address translation is enabled */
-static uint32_t
-mmu_is_addr_tran_enabled(void){
-  return 0x0;
-}
-
-
-
 /* THis function shall be called upon exception on the DSISR
    register. depending on the type of exception appropriate action
    will be taken in this function. Most likely parameters for this
@@ -143,15 +136,22 @@ mmu_is_addr_tran_enabled(void){
 
 static int
 mmu_handle_dsi_exception(BSP_Exception_frame *f, unsigned vector){
-  uint32_t ea, sr_data, vsid, pi, hash1, hash2;
-  int ppteg_search_status, spteg_search_status;
+  volatile uint32_t  ea, sr_data, vsid, pi, hash1, hash2, pp, key;
+  volatile int ppteg_search_status, spteg_search_status;
   libcpu_mmu_pte* ppteg;
   libcpu_mmu_pte* spteg;
-  printk("DSI Exception hit\n");
+  volatile unsigned long cause;
+  //printk("DSI Exception hit\n");
   
+  /* Switch MMU and other Interrupts off */
+  _write_MSR(_read_MSR() & ~ (MSR_EE | MSR_DR | MSR_IR)); 
+
+  
+ 
   /* get effective address from DAR */
   ea = _read_DAR();
-
+  cause = _read_DSISR();
+ 
   /* Read corresponding SR Data */
   sr_data = _read_SR((void *) ea);
 
@@ -160,6 +160,9 @@ mmu_handle_dsi_exception(BSP_Exception_frame *f, unsigned vector){
 
   /* get page index (PI) from EA */
   pi = (ea >> 12) & 0x0000ffff;
+
+  /* Intermediate step for debug purposes */
+  //printk("ea is %x and sr is %x", ea, sr_data);
 
   /* Compute HASH 1 */
   hash1 = PTE_HASH_FUNC1(vsid, pi);
@@ -173,19 +176,49 @@ mmu_handle_dsi_exception(BSP_Exception_frame *f, unsigned vector){
   if (ppteg_search_status == -1){
   
     /* PTE Not found . Search in SPTEG */
+    printk("PTE not found in PPTEG. Continuing search in SPTEG..\n");
     hash2 = PTE_HASH_FUNC2(hash1);
     get_pteg_addr(spteg, hash2);
     spteg_search_status = search_valid_pte(spteg, vsid, pi);
     if (spteg_search_status == -1){
+      
       /* PTE not found in second PTEG also */
+      printk("PTE not found in SPTEG\n");
+
     } else {
       /* PTE found in second group */
       /* Code for determining access attribute goes here */
+      printk("PTE found in SPTEG\n");
+      key = ((sr_data & SR_KP) && MSR_PR) || ((sr_data & SR_KS) && ~(MSR_PR));
+      pp = spteg[spteg_search_status].ptew1 & PTEW1_PROTP;
+      if (((key && (pp == 1 || pp == 0 || pp == 3)) ||
+	  ~(key) && (pp == 3)) &&
+          (cause & 0x02000000)){
+	/* Write access denied */
+      } else if ((key && (pp == 0)) && (cause & 0x00000000)) {
+	/* Read access denied */
+        
+      } else {
+	/* Access permitted */
+      }
     }
     
   } else { 
     /* PTE found in primary group itself */
     /* Code for determining attribute goes here */
+    printk("PTE found in PPTEG\n");
+    key = ((sr_data & SR_KP) && MSR_PR) || ((sr_data & SR_KS) && ~(MSR_PR));
+    pp = ppteg[ppteg_search_status].ptew1 & PTEW1_PROTP;
+    if (((key && (pp == 1 || pp == 0 || pp == 3)) ||
+	~(key) && (pp == 3)) && 
+        (cause & 0x02000000)){
+      /* Write access denied */
+    } else if ((key && (pp == 0)) && (cause & 0x00000000)) {
+      /* Read access denied */
+    } else {
+      /* Access permitted */
+    }
+    
   }
   return 0;
 
@@ -227,12 +260,10 @@ mmu_irq_init(void){
   
 
   /* Initialise segment registers */
-  for (i = 0;i < 16;i++) {
-    asm volatile( "mtsrin %0, %1\n" : : "r" (i * 0x1000), "r" (i << (31 - 3)));
-  }
+  for (i=0; i<16; i++) _write_SR(i, (void *)(i<<28));
 
   /* Set up SDR1 register for page table address */
-  /*asm volatile ("mtspr 25,%0"::"r" (pt));*/
+  _write_SDR1((unsigned long) 0x0000FF00);
 }
 
 /* Make a BAT entry (either IBAT or DBAT entry) Parameters to pass
@@ -240,30 +271,6 @@ mmu_irq_init(void){
 void
 mmu_make_bat_entry(void){
 
-}
-
-/* Search BAT array for a Hit or Miss - Actually the same function
-   that is used to convert EA to PA can be used to return something
-   indicating a BAT (Data or Instruction) miss 
-   - Parameters to be decided */
-
-uint32_t
-mmu_dbat_generate_pa_from_ea(void){
-  return 0x0;
-
-  /* The same function can be used to continue in case of a BAT Array
-  Hit to perform further Page protection checks and continuing access
-  to the memory subsystem */
-
-}
-
-
-/* For Instruction BATs - May be this can be put in one single
-   function */
-uint32_t
-mmu_ibat_generate_pa_from_ea(void){
-  return 0x0;
-  /* Same as above but for Instruction BAT array? */
 }
 
 
