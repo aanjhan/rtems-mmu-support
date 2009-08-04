@@ -25,6 +25,8 @@
 #define PTEW1_PROTP            0x00000003
 
 #define SR_VSID                0x00ffffff
+#define SR_KS                  0x40000000                                           
+#define SR_KP                  0x20000000  
 
 /* Splitting the 64 bit PTE into two 32 bit words. As shown in the OEA
    Manual of PowerPC */
