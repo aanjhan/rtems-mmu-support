@@ -17,6 +17,7 @@
 #include <rtems/powerpc/powerpc.h>
 #include <rtems/irq.h>
 #include <rtems/asm.h>
+#include <rtems/libmmu.h>
 
 /* Macro for clearing BAT Arrays in ASM */
 
@@ -59,10 +60,10 @@ SPR_RO(DSISR);
 
 
 static int
-search_empty_pte_slot(libcpu_mmu_pte *pte){
+search_empty_pte_slot(libcpu_mmu_pte *pteg){
   register int i;
   for(i = 0; i < 8; i++) {
-    if(~(pte[i].ptew0 & PTEW0_VALID)) {
+    if(~(pteg[i].ptew0 & PTEW0_VALID)) {
       /* Found invalid pte slot */
       return i;
     }
@@ -94,23 +95,45 @@ search_valid_pte(libcpu_mmu_pte *pteg, uint32_t vsid, uint32_t api){
 
 
 static int
-BSP_ppc_add_pte(libcpu_mmu_pte *pte,
-        uint32_t vsid,
-        uint32_t hashfunc,
-        uint32_t api,
-        uint32_t rpn,
-        uint32_t wimg,
-        uint32_t protp)
+BSP_ppc_add_pte(libcpu_mmu_pte *ppteg,
+		libcpu_mmu_pte *spteg,
+                uint32_t vsid,
+                uint32_t pi,
+                uint32_t access)
 {
+  int index = 0;
+  uint32_t hash, wimg, protp, rpn, api;
+  libcpu_mmu_pte* pteg;
   
-  /* Remember here the PTE pointer indicate to the actual entry */
-  pte->ptew0 |= (vsid << 7) & PTEW0_VSID;
-  pte->ptew0 |= (hashfunc << 6) & PTEW0_HASHF;
-  pte->ptew0 |= (api & PTEW0_API);
-  pte->ptew1 |= (rpn << 12);
-  pte->ptew1 |= wimg & (PTEW1_WIMG << 3);
-  pte->ptew1 |= (protp & PTEW1_PROTP);
-  pte->ptew0 |= PTEW0_VALID;
+  /* Search empty PTE slot in PPTEG */
+  index = search_empty_pte_slot(ppteg);
+  if (index != -1){
+    pteg = ppteg;
+    hash = 0;
+  } else {
+    /* Search Empty slot in  SPTEG */
+    index = search_empty_pte_slot(spteg);
+    if (index == -1) {
+      return -1;
+    } else {
+      pteg = spteg;
+      hash = 1;
+    }
+  }
+    
+  api = pi >> 10;
+  rpn = pi;
+  wimg = 8;
+  /* FIX ME - Need to modify according to access data */
+  protp = 2; 
+
+  pteg[index].ptew0 |= (vsid << 7) & PTEW0_VSID;
+  pteg[index].ptew0 |= (hash << 6) & PTEW0_HASHF;
+  pteg[index].ptew0 |= (api & PTEW0_API);
+  pteg[index].ptew1 |= (rpn << 12);
+  pteg[index].ptew1 |= (wimg << 3) & (PTEW1_WIMG);
+  pteg[index].ptew1 |= (protp & PTEW1_PROTP);
+  pteg[index].ptew0 |= PTEW0_VALID;
   return 0;
 }
 
@@ -124,7 +147,6 @@ get_pteg_addr(libcpu_mmu_pte* pteg, uint32_t hash){
   pteg = (libcpu_mmu_pte *)(htaborg | (masked_hash << 16) | (hash & 0x000003ff) << 6);
 }
 
-
 /* THis function shall be called upon exception on the DSISR
    register. depending on the type of exception appropriate action
    will be taken in this function. Most likely parameters for this
@@ -136,12 +158,12 @@ get_pteg_addr(libcpu_mmu_pte* pteg, uint32_t hash){
 
 static int
 mmu_handle_dsi_exception(BSP_Exception_frame *f, unsigned vector){
-  volatile uint32_t  ea, sr_data, vsid, pi, hash1, hash2, pp, key;
+  volatile uint32_t  ea, sr_data, vsid, pi, hash1, hash2, pp, key, api;
   volatile int ppteg_search_status, spteg_search_status;
+  int alut_access_attrb;
   libcpu_mmu_pte* ppteg;
   libcpu_mmu_pte* spteg;
   volatile unsigned long cause;
-  //printk("DSI Exception hit\n");
   
   /* Switch MMU and other Interrupts off */
   _write_MSR(_read_MSR() & ~ (MSR_EE | MSR_DR | MSR_IR)); 
@@ -160,9 +182,7 @@ mmu_handle_dsi_exception(BSP_Exception_frame *f, unsigned vector){
 
   /* get page index (PI) from EA */
   pi = (ea >> 12) & 0x0000ffff;
-
-  /* Intermediate step for debug purposes */
-  //printk("ea is %x and sr is %x", ea, sr_data);
+  api = pi >> 10;
 
   /* Compute HASH 1 */
   hash1 = PTE_HASH_FUNC1(vsid, pi);
@@ -171,24 +191,24 @@ mmu_handle_dsi_exception(BSP_Exception_frame *f, unsigned vector){
   get_pteg_addr(ppteg, hash1);
 
   /* Search for PTE in group */
-  ppteg_search_status = search_valid_pte(ppteg, vsid, pi);
+  ppteg_search_status = search_valid_pte(ppteg, vsid, api);
   
   if (ppteg_search_status == -1){
   
     /* PTE Not found . Search in SPTEG */
-    printk("PTE not found in PPTEG. Continuing search in SPTEG..\n");
     hash2 = PTE_HASH_FUNC2(hash1);
     get_pteg_addr(spteg, hash2);
-    spteg_search_status = search_valid_pte(spteg, vsid, pi);
+    spteg_search_status = search_valid_pte(spteg, vsid, api);
     if (spteg_search_status == -1){
       
       /* PTE not found in second PTEG also */
-      printk("PTE not found in SPTEG\n");
+      alut_access_attrb = rtems_libmmu_get_access_attribute((char *)ea);
+      printk("ALUT Access Attribute is %d\n", alut_access_attrb);
+      BSP_ppc_add_pte(ppteg, spteg, vsid, api, alut_access_attrb);
 
     } else {
       /* PTE found in second group */
       /* Code for determining access attribute goes here */
-      printk("PTE found in SPTEG\n");
       key = ((sr_data & SR_KP) && MSR_PR) || ((sr_data & SR_KS) && ~(MSR_PR));
       pp = spteg[spteg_search_status].ptew1 & PTEW1_PROTP;
       if (((key && (pp == 1 || pp == 0 || pp == 3)) ||
@@ -206,7 +226,6 @@ mmu_handle_dsi_exception(BSP_Exception_frame *f, unsigned vector){
   } else { 
     /* PTE found in primary group itself */
     /* Code for determining attribute goes here */
-    printk("PTE found in PPTEG\n");
     key = ((sr_data & SR_KP) && MSR_PR) || ((sr_data & SR_KS) && ~(MSR_PR));
     pp = ppteg[ppteg_search_status].ptew1 & PTEW1_PROTP;
     if (((key && (pp == 1 || pp == 0 || pp == 3)) ||
