@@ -50,7 +50,8 @@ rtems_task Init(
   unsigned long msr;
   int access;
   int i;
-  volatile char* a = 0xA0000000;
+  volatile char* a1 = 0x01F00000;
+  volatile char* a2 = 0x01A00008;
   void* memset_status;
   unsigned char* start = (unsigned char*)0x3000;
   rtems_libmmu_alut_entry Entry;
@@ -84,7 +85,7 @@ rtems_task Init(
   }
   
   printf("Adding valid entry into ALUT\n");
-  Entry.start_addr = (char*)0x02000400;
+  Entry.start_addr = (char*)0x01A00000;
   Entry.block_size = 0x00008000;
   Entry.access_attrib = 2;
   status = rtems_libmmu_alut_add_entry(pAlut,&Entry);
@@ -108,6 +109,18 @@ rtems_task Init(
   }
 
   printf("Adding entry\n");
+  Entry.start_addr = (char*)0x01F00000;
+  Entry.block_size = 0x00004000;
+  Entry.access_attrib = 1;
+  status = rtems_libmmu_alut_add_entry(pAlut,&Entry);
+  if(status == RTEMS_SUCCESSFUL){
+    printf("Entry successfully added\n");
+  }
+  else{
+    printf("WARNING : Entry adding failed\n");
+  }
+
+  printf("Adding entry\n");
   Entry.start_addr = (char*)0x00008000;
   Entry.block_size = 0x00004000;
   Entry.access_attrib = 1;
@@ -118,9 +131,10 @@ rtems_task Init(
   else{
     printf("WARNING : Entry adding failed\n");
   }
+
   
   printf("Searching for access attrbute for address 0x00008111...\n");
-  access = rtems_libmmu_get_access_attribute(pAlut, (char*)0x00008111);
+  access = rtems_libmmu_get_access_attribute((char*)0xAA000000);
   if(access == RTEMS_UNSATISFIED){
     printf("Access Attribute not found \n");
   }
@@ -129,7 +143,7 @@ rtems_task Init(
   }
 
   printf("Searching for access attrbute for address 0x00708111...\n");
-  access = rtems_libmmu_get_access_attribute(pAlut, (char*)0x00708111);
+  access = rtems_libmmu_get_access_attribute((char*)0x00708111);
   if(access == RTEMS_UNSATISFIED){
     printf("Unmapped address' access requested\n");
   }
@@ -137,9 +151,19 @@ rtems_task Init(
     printf("WARNING : Access attribute request passed for an unmapped address\n");
   }
 
-  printf("Checking MMU expection.. \n");
+  printf("Checking MMU expection 1.. \n");
   for(i=0;i<128;i++){
-   *a++ = 0xaa;
+   *a2++ = 0xaaaaaaaa;
+  }
+  
+  printf("Checking MMU expection 2.. \n");
+  for(i=0;i<128;i++){
+   *a1++ = 0xaaaaaaaa;
+  }
+
+  printf("Checking MMU expection 3.. \n");
+  for(i=0;i<128;i++){
+   *a2++ = 0xaaaaaaaa;
   }
   puts( "\n\n*** MMU ALUT TEST ENDS ***\n\n" );
   exit(0);

@@ -64,7 +64,7 @@ search_empty_pte_slot(libcpu_mmu_pte *pteg){
   register int i;
   for(i = 0; i < 8; i++) {
     if(~(pteg[i].ptew0 & PTEW0_VALID)) {
-      /* Found invalid pte slot */
+      /* Found empty pte slot */
       return i;
     }
   }
@@ -101,7 +101,7 @@ BSP_ppc_add_pte(libcpu_mmu_pte *ppteg,
                 uint32_t pi,
                 uint32_t access)
 {
-  int index = 0;
+  int index;
   uint32_t hash, wimg, protp, rpn, api;
   libcpu_mmu_pte* pteg;
   
@@ -138,13 +138,13 @@ BSP_ppc_add_pte(libcpu_mmu_pte *ppteg,
 }
 
 static void
-get_pteg_addr(libcpu_mmu_pte* pteg, uint32_t hash){
-  uint32_t masked_hash;
+get_pteg_addr(libcpu_mmu_pte** pteg, uint32_t hash){
+  uint32_t masked_hash = 0x0;
   uint32_t htaborg, htabmask;
-  htabmask = _read_SDR1() & 0x1ff;
+  htabmask = _read_SDR1() & 0x000001ff;
   htaborg = _read_SDR1() & 0xffff0000;
   masked_hash = ((htaborg >> 16) & 0x000001ff) | ((hash >> 10) & htabmask);
-  pteg = (libcpu_mmu_pte *)(htaborg | (masked_hash << 16) | (hash & 0x000003ff) << 6);
+  *pteg = (libcpu_mmu_pte *)(htaborg | (masked_hash << 16) | (hash & 0x000003ff) << 6);
 }
 
 /* THis function shall be called upon exception on the DSISR
@@ -188,7 +188,7 @@ mmu_handle_dsi_exception(BSP_Exception_frame *f, unsigned vector){
   hash1 = PTE_HASH_FUNC1(vsid, pi);
 
   /* Compute PTEG Address from the hash 1 value */
-  get_pteg_addr(ppteg, hash1);
+  get_pteg_addr(&ppteg, hash1);
 
   /* Search for PTE in group */
   ppteg_search_status = search_valid_pte(ppteg, vsid, api);
@@ -197,14 +197,13 @@ mmu_handle_dsi_exception(BSP_Exception_frame *f, unsigned vector){
   
     /* PTE Not found . Search in SPTEG */
     hash2 = PTE_HASH_FUNC2(hash1);
-    get_pteg_addr(spteg, hash2);
+    get_pteg_addr(&spteg, hash2);
     spteg_search_status = search_valid_pte(spteg, vsid, api);
     if (spteg_search_status == -1){
       
       /* PTE not found in second PTEG also */
       alut_access_attrb = rtems_libmmu_get_access_attribute((char *)ea);
-      printk("ALUT Access Attribute is %d\n", alut_access_attrb);
-      BSP_ppc_add_pte(ppteg, spteg, vsid, api, alut_access_attrb);
+      BSP_ppc_add_pte(ppteg, spteg, vsid, pi, alut_access_attrb);
 
     } else {
       /* PTE found in second group */
@@ -239,6 +238,8 @@ mmu_handle_dsi_exception(BSP_Exception_frame *f, unsigned vector){
     }
     
   }
+  /* Before returning turn on MMU */
+  _write_MSR(_read_MSR() | MSR_EE | MSR_DR | MSR_IR);
   return 0;
 
 }
@@ -282,7 +283,7 @@ mmu_irq_init(void){
   for (i=0; i<16; i++) _write_SR(i, (void *)(i<<28));
 
   /* Set up SDR1 register for page table address */
-  _write_SDR1((unsigned long) 0x0000FF00);
+  _write_SDR1((unsigned long) 0x00FF0000);
 }
 
 /* Make a BAT entry (either IBAT or DBAT entry) Parameters to pass
