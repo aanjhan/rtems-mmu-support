@@ -27,36 +27,37 @@
 #include <rtems/libmmu.h>
 #include <libcpu/mmu_support.h>
 
-#define SYNC_LONGJMP_TEST(msr)				\
-	asm volatile(						\
-		"	mtsrr1	%0			\n\t"	\
-		"	bl		1f			\n\t"	\
-		"1:	mflr	3			\n\t"	\
-		"	addi	3,3,1f-1b	\n\t"	\
-		"	mtsrr0	3			\n\t"	\
-		"	rfi					\n\t"	\
-		"1:						\n\t"	\
-		:								\
-		:"r"(msr)						\
-		:"3","lr","memory")
-
-
-
 rtems_task Init(
   rtems_task_argument ignored
 )
 {
   rtems_status_code status;
-  unsigned long msr;
   int access;
   int i;
-  volatile char* a1 = 0x01F00000;
-  volatile char* a2 = 0x01A00008;
-  void* memset_status;
-  unsigned char* start = (unsigned char*)0x3000;
+  unsigned char* a1;
+  unsigned char* a2;
+  unsigned char* ppteg_addr;
+  unsigned char* spteg_addr;
+  a1 = (unsigned char *)0x01A00100;
+  a2 = (unsigned char *)0x01A00008;
+  ppteg_addr = (unsigned char *) 0x00FF8000;
+  spteg_addr = (unsigned char *) 0x00FF7FC0;
   rtems_libmmu_alut_entry Entry;
   rtems_libmmu_alut* pAlut;
   puts( "\n\n*** MMU ALUT TEST BEGINS ***\n\n" );
+
+  /* Write dummy entries into PTEG for testing */
+  for(i=0; i<64;i++){
+    *ppteg_addr = 0xFF;
+    *ppteg_addr++;
+  }
+
+  for(i=0; i<64;i++){
+    *spteg_addr = 0xFF;
+    *spteg_addr++;
+  }
+  printf("Wrote Invalid entries into PTEG\n");
+ 
   pAlut = rtems_libmmu_alut_create(3);
   printf("ALUT created\n");
   printf("Adding entry with block size less than 4K\n");
@@ -153,17 +154,17 @@ rtems_task Init(
 
   printf("Checking MMU expection 1.. \n");
   for(i=0;i<128;i++){
-   *a2++ = 0xaaaaaaaa;
+   *a2++ = 0xCC;
   }
   
   printf("Checking MMU expection 2.. \n");
   for(i=0;i<128;i++){
-   *a1++ = 0xaaaaaaaa;
+   *a1++ = 0xCC;
   }
 
   printf("Checking MMU expection 3.. \n");
   for(i=0;i<128;i++){
-   *a2++ = 0xaaaaaaaa;
+   *a2++ = 0xCC;
   }
   puts( "\n\n*** MMU ALUT TEST ENDS ***\n\n" );
   exit(0);

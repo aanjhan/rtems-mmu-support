@@ -63,7 +63,7 @@ static int
 search_empty_pte_slot(libcpu_mmu_pte *pteg){
   register int i;
   for(i = 0; i < 8; i++) {
-    if(~(pteg[i].ptew0 & PTEW0_VALID)) {
+    if((pteg[i].ptew0 & PTEW0_VALID) != 0x80000000) {
       /* Found empty pte slot */
       return i;
     }
@@ -80,7 +80,7 @@ search_valid_pte(libcpu_mmu_pte *pteg, uint32_t vsid, uint32_t api){
   register uint32_t temp_api;
     
   for(i = 0; i < 8; i++) {
-    if(pteg[i].ptew0 & PTEW0_VALID) { 
+    if((pteg[i].ptew0 & PTEW0_VALID) == 0x80000000) { 
 		 
       temp_api  = pteg[i].ptew0 & PTEW0_API;
       temp_vsid = (pteg[i].ptew0 & PTEW0_VSID) >> 7;
