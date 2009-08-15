@@ -1,0 +1,34 @@
+#summary Google Summer of Code Pencils down report
+
+= Scope of the Project =
+
+A brief abstract of the project goes here.
+
+= Major tasks =
+
+Major tasks of the projects like getting to know the PowerPC MMU architecture, knowing the RTEMS codebase are listed here.
+
+
+= Design overview =
+
+Design description of the modules go in here. Mostly will be pulled in from http://www.rtems.com/wiki/index.php/MMU_Support#Design_Notes
+
+
+= Accomplished tasks =
+
+List of tasks accomplished.
+
+
+= Future scope / ideas =
+
+Future tasks and goals are put in here.
+
+
+= Challenges faced =
+
+A brief description of major challenges faced goes in here. 
+
+= Test suite =
+
+Description of the test suite used
+
