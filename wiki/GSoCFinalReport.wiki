@@ -6,6 +6,8 @@ Most modern processors have Memory Management Unit Hardware built into the proce
 
 = Major tasks =
 
+  * Understanding the RTEMS source tree structure and the responsibilities of various levels in its architecture.
+
 Major tasks of the projects like getting to know the PowerPC MMU architecture, knowing the RTEMS codebase are listed here.
 
 
