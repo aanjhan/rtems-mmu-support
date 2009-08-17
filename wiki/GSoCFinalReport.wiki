@@ -2,7 +2,7 @@
 
 = Scope of the Project =
 
-A brief abstract of the project goes here.
+Most modern processors have Memory Management Unit Hardware built into the processor whose main functions are virtual address translation, memory protection and cache control. With RTEMS primarily focused on Embedded Real Time applications, making use of these MMU features especially Memory Protection is important to meet the needs of those applications that requires such support. A general infrastructure for applications to use the MMU for memory protection is intended to be prototyped with a basic proof-of-concept for the PowerPC architecture and PSIM board support package.
 
 = Major tasks =
 
@@ -31,4 +31,3 @@ A brief description of major challenges faced goes in here.
 = Test suite =
 
 Description of the test suite used
-
