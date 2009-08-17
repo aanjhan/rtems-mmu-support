@@ -32,7 +32,7 @@ Future tasks and goals are put in here.
 
 = Challenges faced =
 
-A brief description of major challenges faced goes in here. 
+A brief description of major challenges faced goes in here. Also solutions used, any alternate solutions shall be mentioned.
 
 = Test suite =
 
