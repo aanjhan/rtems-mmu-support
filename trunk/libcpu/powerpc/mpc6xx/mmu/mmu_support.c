@@ -16,6 +16,7 @@
 #include "mmu_support.h"
 #include <rtems/powerpc/powerpc.h>
 #include <rtems/irq.h>
+#include <rtems/error.h>
 #include <rtems/asm.h>
 #include <rtems/libmmu.h>
 
@@ -56,19 +57,20 @@ SPR_RO(DSISR);
 /* Compute the secondary hash from a primary hash */
 #define PTE_HASH_FUNC2(hash1) ((~(hash1))&(0x0007FFFF))
 
-/* HTABORG and HTABMASK values */
+int pte_counter = 5;
 
 
 static int
 search_empty_pte_slot(libcpu_mmu_pte *pteg){
-  register int i;
+  int i;
   for(i = 0; i < 8; i++) {
     if((pteg[i].ptew0 & PTEW0_VALID) != 0x80000000) {
       /* Found empty pte slot */
       return i;
     }
   }
-  return -1; /* Failed search for empty pte slot */
+  /* No PTE  free entry found, so rotate count and select a PTE */
+  return -1;
 }
 
 
@@ -114,7 +116,14 @@ BSP_ppc_add_pte(libcpu_mmu_pte *ppteg,
     /* Search Empty slot in  SPTEG */
     index = search_empty_pte_slot(spteg);
     if (index == -1) {
-      return -1;
+      /* Replace random pte entry depending on a counter */
+      index = pte_counter;
+      if (pte_counter == 7){
+	pte_counter = 0;
+      }
+      pte_counter++;
+      pteg = ppteg;
+      hash = 0;
     } else {
       pteg = spteg;
       hash = 1;
@@ -124,9 +133,14 @@ BSP_ppc_add_pte(libcpu_mmu_pte *ppteg,
   api = pi >> 10;
   rpn = pi;
   wimg = 8;
-  /* FIX ME - Need to modify according to access data */
-  protp = 2; 
 
+  protp = access ; 
+  
+  /* Clear the pte first . Invalidate */
+  pteg[index].ptew0 = 0x00000000;
+  pteg[index].ptew1 = 0x00000000;
+
+  /* Update the PTE with new entry */
   pteg[index].ptew0 |= (vsid << 7) & PTEW0_VSID;
   pteg[index].ptew0 |= (hash << 6) & PTEW0_HASHF;
   pteg[index].ptew0 |= (api & PTEW0_API);
@@ -203,7 +217,11 @@ mmu_handle_dsi_exception(BSP_Exception_frame *f, unsigned vector){
       
       /* PTE not found in second PTEG also */
       alut_access_attrb = rtems_libmmu_get_access_attribute((char *)ea);
+      if(alut_access_attrb == RTEMS_UNSATISFIED){
+        rtems_panic("Unmapped memory access requested");
+      } else {
       BSP_ppc_add_pte(ppteg, spteg, vsid, pi, alut_access_attrb);
+      }
 
     } else {
       /* PTE found in second group */

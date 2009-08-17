@@ -36,10 +36,13 @@ rtems_task Init(
   int i;
   unsigned char* a1;
   unsigned char* a2;
+  unsigned char* a3;
   unsigned char* ppteg_addr;
   unsigned char* spteg_addr;
-  a1 = (unsigned char *)0x01A00100;
+  a1 = (unsigned char *)0x01A01000;
   a2 = (unsigned char *)0x01A00008;
+  /* Unmapped access request test - Should panic */
+  a3 = (unsigned char *)0x01A10008;
   ppteg_addr = (unsigned char *) 0x00FF8000;
   spteg_addr = (unsigned char *) 0x00FF7FC0;
   rtems_libmmu_alut_entry Entry;
@@ -166,6 +169,12 @@ rtems_task Init(
   for(i=0;i<128;i++){
    *a2++ = 0xCC;
   }
+  
+  printf("Checking MMU expection 4.. \n");
+  for(i=0;i<128;i++){
+   *a3++ = 0xCC;
+  }
+
   puts( "\n\n*** MMU ALUT TEST ENDS ***\n\n" );
   exit(0);
 }
