@@ -29,17 +29,6 @@
 rtems_libmmu_alut alut;
 
 
-/* Temprary initialisation of ALUT */
-//const rtems_libmmu_alut_entry rtems_libmmu_alut[RTEMS_LIBMMU_ALUT_SIZE] = 
-//{
-  /* Memory Layout access table initialisation goes here */
-//  {0x00000000, 0x00000FFF, 1},
-//  {0x00008000, 0x000007FF, 2},
-//  {0x02000000, 0x00000FFF, 3},
-//  {0x10000000, 0x00000FFF, 2},
-//  {0x11000000, 0x00000FFF, 1}
-//};
-
 /*****************************************************
 * Allocate memory for the ALUT, initialises the 
 * ALUT
@@ -139,10 +128,10 @@ rtems_libmmu_alut_init(void)
 * location                                           *
 *****************************************************/
 int
-rtems_libmmu_get_access_attribute(rtems_libmmu_alut* pAlut, char* addr)
+rtems_libmmu_get_access_attribute(char* addr)
 {
   rtems_libmmu_alut_entry* hit_entry;
-  hit_entry = rtems_libmmu_alut_search(pAlut, addr);
+  hit_entry = rtems_libmmu_alut_search(&alut, addr);
   if (hit_entry != NULL)
   {
     return hit_entry->access_attrib;

@@ -232,9 +232,10 @@ mmu_handle_dsi_exception(BSP_Exception_frame *f, unsigned vector){
 	  ~(key) && (pp == 3)) &&
           (cause & 0x02000000)){
 	/* Write access denied */
+        rtems_task_delete(RTEMS_SELF);
       } else if ((key && (pp == 0)) && (cause & 0x00000000)) {
 	/* Read access denied */
-        
+        rtems_task_delete(RTEMS_SELF);
       } else {
 	/* Access permitted */
       }
@@ -249,8 +250,10 @@ mmu_handle_dsi_exception(BSP_Exception_frame *f, unsigned vector){
 	~(key) && (pp == 3)) && 
         (cause & 0x02000000)){
       /* Write access denied */
+      rtems_task_delete(RTEMS_SELF);
     } else if ((key && (pp == 0)) && (cause & 0x00000000)) {
       /* Read access denied */
+      rtems_task_delete(RTEMS_SELF);
     } else {
       /* Access permitted */
     }
