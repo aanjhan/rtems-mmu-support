@@ -17,10 +17,9 @@
 #define RTEMS_LIBMMU_ALUT_SIZE 16
 
 /* Access definition macros below */
-#define RTEMS_LIBMMU_ACCESS_PROT_NONE      0
-#define RTEMS_LIBMMU_ACCESS_PROT_READ      1
-#define RTEMS_LIBMMU_ACCESS_PROT_WRITE     2
-#define RTEMS_LIBMMU_ACCESS_PROT_EXECUTE   3
+#define RTEMS_LIBMMU_ACCESS_WRITE_ONLY  1
+#define RTEMS_LIBMMU_ACCESS_NO_PROT     2
+#define RTEMS_LIBMMU_ACCESS_READ_ONLY   3
 
 
 typedef struct
@@ -47,7 +46,7 @@ rtems_status_code
 rtems_libmmu_alut_add_entry(rtems_libmmu_alut* pAlut, rtems_libmmu_alut_entry* pEntry);
 
 extern int
-rtems_libmmu_get_access_attribute(rtems_libmmu_alut* pAlut, char* addr);
+rtems_libmmu_get_access_attribute(char* addr);
 
 extern int
 rtems_libmmu_list_alut_access(void);
