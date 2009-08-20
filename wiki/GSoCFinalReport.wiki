@@ -11,8 +11,9 @@ Most modern processors have Memory Management Unit Hardware built into the proce
   * Understanding the RTEMS source tree structure and the responsibilities of various levels in its architecture.
   * Getting to terms with the PowerPC general register set, MMU hardware architecture and its functional flow.
   * Understanding what parts of the functional flow is performed by the hardware and what needs to be implemented at the Operating System level.
-
-Major tasks of the projects like getting to know the PowerPC MMU architecture, knowing the RTEMS codebase are listed here.
+  * Designing a generalised architecture independent method to specify memory address blocks with protection attribute, cache control etc.
+  * Low level architecture dependent implementation of MMU support for PSIM BSP with PowerpC 603e series as the base architecture.
+  * Testsuite integration that tests for several illegal / dangerous map specifications and also tests low level implementation.
 
 
 = Design overview =
