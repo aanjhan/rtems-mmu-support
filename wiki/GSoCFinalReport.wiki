@@ -81,9 +81,19 @@ A brief description of major challenges faced goes in here. Also solutions used,
 
 The below section describes the testsuite used to verify the implementation. 
 
-*Prologue of the testsuite*
+*Prologue of the testsuite* : ALUT is created using the *create_alut* API and a set of page table entries is populated with values making sure the valid bit is set. This initial PTE setup is used in a test case which shall be described later in this section.
 
-ALUT is created using the *create_alut* API and a set of page table entries is populated with values making sure the valid bit is set. This initial PTE setup is used in a test case which shall be described later in this section.
+*Test 1-6* : Tests various valid/invalid scenarios while populating the ALUT as seen the console output below.
+
+*Test 7-8* : Tests retrieving of access attribute from the ALUT for a couple of scenarios.
+
+*MMU Exception Tests* : First test, writes data into the address locations starting from 0x01A00008 . Since there would be no entry for this address block, and the PTEs have been already populated with some _valid_ entry, one PTE needs to be replaced with the data for the above address accessed. 
+
+The second exception test is performed on a different page address and the update of the PTE is verified using GDB. 
+
+The third test, checks whether the first PTE update is correct by making a same access to the page accessed by the first test. Now the exception should not be hit, as the PTE search algorithm should find an appropriate valid PTE present. 
+
+The final exception test does an access to an unmapped location that is present in the memory space of PSIM but not present in the ALUT table. Now the system panics as expected.
 
 The snapshot of the console when running the test case is provided below.
 
