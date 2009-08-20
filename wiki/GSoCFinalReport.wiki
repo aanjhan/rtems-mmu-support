@@ -29,7 +29,32 @@ http://www.rtems.com/wiki/images/d/d0/Hld_mmu_support.png
 === LibMMU ===
 The MMU support lib or libmmu contains general APIs that enables specifying address blocks with type of memory access protection, cache control bits. This information can be used by other layers when needed. A few such scenarios are discussed in the following sections. 
 
-These information are stored in a table called *Access Look Up Table* or *ALUT*. The table is implementated as shown below.
+These information are stored in a table called *Access Look Up Table* or *ALUT*. The table is implemented as shown below. Containing some sample values
+
+|| *Start Address* || *Address Block size* || *Memory Access Attribute* || 
+|| 0x00001000 || 0x4000 || SUPERVISOR_READ_ONLY ||
+|| 0x1A000000 || 0x8000 || NO_PROT ||
+|| 0x00008000 || 0x4000 || SUPERVISOR_READ_ONLY ||
+
+The Cache control attributes will be added as an extra field here in the ALUT. The ALUT also takes in only values satisfying specific criteria as below :
+
+  * Block sizes of 4K and more (because min page size in general is set as 4K)
+  * Only sizes that are multiples of 4K are accepted.
+  * Address ranges cannot overlap. (entry wont get added into the ALUT)
+
+*LibMMU API examples*
+
+Some APIs that are available for accessing the ALUT are as follows
+
+        * rtems_libmmu_alut_add_entry
+        * rtems_libmmu_alut_create
+        * rtems_libmmu_alut_list_attrbs (yet to be made completely functional)
+
+
+=== LibCPU/powerpc/mpc6xx ===
+
+In this section as briefed above, is the architecture dependent implementation of MMU support for PowerPC 603e architecture according to specifications of [1]
+
 
 
 Design description of the modules go in here. Mostly will be pulled in from http://www.rtems.com/wiki/index.php/MMU_Support#Design_Notes
@@ -52,3 +77,6 @@ A brief description of major challenges faced goes in here. Also solutions used,
 = Test suite =
 
 Description of the test suite used
+
+= References =
+  # http://www.freescale.com/files/product/doc/MPCFPE32B.pdf
