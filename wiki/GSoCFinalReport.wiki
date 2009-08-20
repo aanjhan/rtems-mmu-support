@@ -53,7 +53,7 @@ Some APIs that are available for accessing the ALUT are as follows
 
 === LibCPU/powerpc/mpc6xx ===
 
-In this section as briefed above, is the architecture dependent implementation of MMU support for PowerPC 603e architecture according to specifications of [1]
+In this section as briefed above, is the architecture dependent implementation of MMU support for PowerPC 603e architecture according to specifications of 1.
 
 
 
@@ -73,10 +73,6 @@ Design description of the modules go in here. Mostly will be pulled in from http
 Several tasks still remain with the Google Summer of Code participation in this project widening the ideas and possibilities of further implementation experiments. A few are listed below.
 
 
-
-
-
-
 = Challenges faced =
 
 A brief description of major challenges faced goes in here. Also solutions used, any alternate solutions shall be mentioned.
@@ -87,9 +83,43 @@ The below section describes the testsuite used to verify the implementation.
 
 *Prologue of the testsuite*
 
-ALUT is created using the _create_alut API and a set of page table entries is populated with values making sure the valid bit is set. This initial PTE setup is used in a test case which shall be described later in this section.
+ALUT is created using the *create_alut* API and a set of page table entries is populated with values making sure the valid bit is set. This initial PTE setup is used in a test case which shall be described later in this section.
 
-*Test 1* 
+The snapshot of the console when running the test case is provided below.
+
+{{{
+*** MMU ALUT TEST BEGINS ***
+
+
+Wrote Invalid entries into PTEG
+ALUT created
+Test 1 : Adding entry with block size less than 4K
+Passed : Entry addition failed
+Test 2 : Adding entry with block size not a multiple of 4K
+Passed : Entry adding failed
+Test 3 : Adding valid entry into ALUT
+Passed : Entry Added
+Test 4 : Adding overlapping  address value
+Passed : Successful detection of address overlap and ignored
+Test 5 : Adding valid entry
+Passed: Entry successfully added
+Test 6 : Adding valid entry
+Passed : Entry successfully added
+Test 7 : Searching for access attrbute for address 0x8111
+Passed : Access Attribute for the request is 1
+Test 8 : Searching for access attrbute for unmapped address 0x708111
+Passed : Unmapped address' access requested
+Checking MMU exception 1..
+Checking MMU exception 2..
+Checking MMU exception 3..
+Checking MMU exception 4..
+
+Breakpoint 1, C_exception_handler (excPtr=0x4d4c8)
+    at ../../../../../../../rtems/c/src/lib/libcpu/powerpc/new-exceptions/bspsupport/vectors_init.c:112
+112       int               recoverable = 0;
+}}}
+
+
 
 
 = References =
