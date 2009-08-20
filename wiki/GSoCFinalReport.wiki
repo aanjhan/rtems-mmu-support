@@ -62,12 +62,19 @@ Design description of the modules go in here. Mostly will be pulled in from http
 
 = Accomplished tasks =
 
-List of tasks accomplished.
+  * Basic support APIs of libMMU implemented.
+  * PowerPC MMU architecture studied and support enabled for PSIM BSP under libCPU.
+  * A testsuite that executes several test scenarios for testing both the libMMU and libCPU implementation implemented and run.
+  * Various checks for protected memory accesses verified in the testsuite and found functional.
 
 
 = Future scope / ideas =
 
-Future tasks and goals are put in here.
+Several tasks still remain with the Google Summer of Code participation in this project widening the ideas and possibilities of further implementation experiments. A few are listed below.
+
+
+
+
 
 
 = Challenges faced =
