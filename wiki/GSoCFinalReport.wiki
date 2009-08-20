@@ -83,7 +83,14 @@ A brief description of major challenges faced goes in here. Also solutions used,
 
 = Test suite =
 
-Description of the test suite used
+The below section describes the testsuite used to verify the implementation. 
+
+*Prologue of the testsuite*
+
+ALUT is created using the _create_alut API and a set of page table entries is populated with values making sure the valid bit is set. This initial PTE setup is used in a test case which shall be described later in this section.
+
+*Test 1* 
+
 
 = References =
   # http://www.freescale.com/files/product/doc/MPCFPE32B.pdf
