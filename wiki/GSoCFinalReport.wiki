@@ -76,6 +76,7 @@ Design description of the modules go in here. Mostly will be pulled in from http
   * A POSIX like API support to set the protection. The inherent design of RTEMS has pushed this further for some thought.
   * Testing on real hardware.
   * TLB Miss Exception Test (unable to test because of may be a PSIM implementation issue)
+  * Task based MMU Context feasibility study.
 
 
 = Challenges faced =
