@@ -55,9 +55,14 @@ Some APIs that are available for accessing the ALUT are as follows
 
 In this section as briefed above, is the architecture dependent implementation of MMU support for PowerPC 603e architecture according to specifications of 1.
 
+Some important responsibilities at this layer are listed below
 
-
-Design description of the modules go in here. Mostly will be pulled in from http://www.rtems.com/wiki/index.php/MMU_Support#Design_Notes
+  * Setting up the exception handler at the appropriate vector
+  * Decoding the address at which the exception occurred by reading from appropriate register
+  * Calculation of the primary and secondary page table entry group addresses using the hash functions
+  * Verifying the presence of a valid PTE for that address range.
+  * Updating the PTE with valid info, by *pulling* the needed info from the ALUT.
+  * Also implements arbitrary PTE invalidation and updating with a recently accesses page information if all available page table entries are filled.
 
 
 = Accomplished tasks =
