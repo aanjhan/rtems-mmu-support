@@ -22,7 +22,7 @@ The design keeps in place the well separated design of RTEMS. The entire impleme
      * Architecture independent API implementation
      * Architecture dependent MMU support implementation
 
-
+The architecture independent API implementation is placed in the *cpukit* layer of RTEMS. This is the layer where a number of _lib*_ implementations are present. For e.g. libcsupport, librpc, posix, libnetworking are present. The MMU support lib is called *libmmu* and shall be referenced the same hereon in this document. The architecture specific implementation, here in this project the PowerPC mpc6xx series are placed in the *libcpu/powerpc/mpc6xx* of RTEMS.
 
 Design description of the modules go in here. Mostly will be pulled in from http://www.rtems.com/wiki/index.php/MMU_Support#Design_Notes
 
