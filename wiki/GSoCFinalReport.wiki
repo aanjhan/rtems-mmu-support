@@ -26,6 +26,11 @@ The architecture independent API implementation is placed in the *cpukit* layer 
 
 http://www.rtems.com/wiki/images/d/d0/Hld_mmu_support.png
 
+=== LibMMU ===
+The MMU support lib or libmmu contains general APIs that enables specifying address blocks with type of memory access protection, cache control bits. This information can be used by other layers when needed. A few such scenarios are discussed in the following sections. 
+
+These information are stored in a table called *Access Look Up Table* or *ALUT*. The table is implementated as shown below.
+
 
 Design description of the modules go in here. Mostly will be pulled in from http://www.rtems.com/wiki/index.php/MMU_Support#Design_Notes
 
